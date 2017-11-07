@@ -1,4 +1,4 @@
 all:
-	mpicc main.c -g -fopenmp -Wall -o exe
+	@mpicc main.c -g -fopenmp -Wall -o exe
 run:
-	mpirun ./exe
+	@mpirun ./exe
