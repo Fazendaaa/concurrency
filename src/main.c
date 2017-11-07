@@ -46,9 +46,15 @@ int main (int argc, char **argv) {
 
     pivoting(world_rank, world_size, matrix, matrix_size);
 
-    if (is_root(world_rank)) {
+    /*  Aqui  deve ir o código que junta todas as linhas pivotadas em uma matriz
+        só para o processo tail poder zerar as colunas.
+    */
+    merge_matrix(world_rank, world_size, matrix, matrix_size);
+
+    if (is_tail(world_rank)) {
         printf("\nFINAL MATRIX:\n");
         print_matrix(matrix, matrix_size);
+        /*  Zerar as colunas aqui.  */
     }
 
     MPI_Finalize();
@@ -135,8 +141,73 @@ static void pivoting (const int world_rank, const int world_size,
     }
 }
 
+static void matrix_to_vector (const int **matrix, int *vector,
+                             const size_t matrix_size) {
+    size_t matrix_col = matrix_size+1, matrix_line = matrix_size, i = 0, j = 0,
+           k = 0;
+
+    if (NULL != matrix && NULL != vector) {
+        for (; i < matrix_line; i++) {
+            for (j = 0; j < matrix_col; j++) {
+                vector[k++] = matrix[i][j];
+            }
+        }
+    }
+}
+
+static void vector_to_matrix (const int *vector, int **matrix, 
+                             const size_t matrix_size) {
+    size_t matrix_col = matrix_size+1, matrix_line = matrix_size, i = 0, j = 0,
+           k = 0;
+
+    if (NULL != matrix && NULL != vector) {
+        for (; i < matrix_line; i++) {
+            for (j = 0; j < matrix_col; j++) {
+                matrix[i][j] = vector[k++];
+            }
+        }
+    }
+}
+
+static void merge_pivoting (const int world_rank, const int world_size,
+                            int **matrix, int *vecotr,
+                            const size_t matrix_size) {
+    size_t matrix_col = matrix_size+1, matrix_line = matrix_size;
+    
+}
+
 static void merge_matrix (const int world_rank, const int world_size,
                           int **matrix, const size_t matrix_size) {
-    size_t matrix_col = matrix_size+1, i = 0, j = 0;
+    size_t matrix_col = matrix_size+1, matrix_line = matrix_size;
+    size_t chunk = matrix_size/world_size;
+    int *vector = (int *) malloc(sizeof(int) * (matrix_line*matrix_col));
     
+    /*  Uma  estrutura de anel para passar as linhas do processo anterior que já
+        foram  pivotadas  com  a  do  processo  atual  e  passar  para o próximo
+        processo.   */
+    if (is_root(world_rank)) {
+        matrix_to_vector(matrix, vector, matrix_size);
+        MPI_Send(vector, matrix_line*matrix_col, MPI_INT,
+                (world_rank+1)%world_size, 0, MPI_STATUS_IGNORE);        
+    } else if (!is_tail(world_rank, world_size)){
+        MPI_Recv(vector, matrix_line*matrix_col, MPI_INT, world_size-1, 0,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        /*  Juntar  a  matrix  com  as linhas pivotadas até este processo com as
+            pivotadas por este processo.    */
+        merge_pivoting(world_rank, world_size, matrix, vector, matrix_size);
+        matrix_to_vector(matrix, vector, matrix_size);
+        MPI_Send(vector, matrix_line*matrix_col, MPI_INT,
+                (world_rank+1)%world_size, 0, MPI_STATUS_IGNORE);
+    } else {
+        /*  Quando  o  processo for o tail, ele apenas juntará toda a informação
+            em  uma matriz final que será utilizada posteriormente para zerar as
+            colunas.    */
+        MPI_Recv(vector, matrix_line*matrix_col, MPI_INT, world_size-1, 0,
+                 MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        merge_pivoting(world_rank, world_size, matrix, vector, matrix_size);
+        matrix_to_vector(matrix, vector, matrix_size);
+        vector_to_matrix(vector, matrix);
+    }
+
+    free(vector);
 }
