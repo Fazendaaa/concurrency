@@ -9,8 +9,8 @@
 
 /*  ------------------------------- DEFINES --------------------------------  */
 
-#define is_root(m)      ((0 == m) ? 1 : 0)
-#define is_tail(p, w)   ((p == w-1) ? 1 : 0)
+#define is_root(p)      ((0 == p) ? 1 : 0)
+#define is_tail(p, w)   ((w-1 == p) ? 1 : 0)
 
 /*  -------------------------------- HEADERS -------------------------------  */
 
@@ -20,6 +20,7 @@ static void free_matrix (int ***, const size_t );
 
 static void pivoting (const int, const int, int**, const size_t);
 static void merge_matrix (const int, const int, int**, const size_t);
+static void clear_columns (int**, const size_t);
 
 /*  --------------------------------- MAIN ---------------------------------  */
 
@@ -29,8 +30,6 @@ int main (int argc, char **argv) {
     int **matrix = NULL;
     /*  Variáveis MPI.  */
     int world_size = 0, world_rank = 0;
-    /*  Variáveis OMP.  */
-    //int this_thread = 0, n_threads = 0;
 
     MPI_Init(&argc, &argv);
 
@@ -48,9 +47,11 @@ int main (int argc, char **argv) {
     merge_matrix(world_rank, world_size, matrix, matrix_size);
 
     if (is_tail(world_rank, world_size)) {
+        printf("\nBEFORE CLEANING COLLUMNS:\n");
+        print_matrix(matrix, matrix_size);
+        clear_columns(matrix, matrix_size);
         printf("\nFINAL MATRIX:\n");
         print_matrix(matrix, matrix_size);
-        /*  Zerar as colunas aqui.  */
     }
 
     MPI_Finalize();
@@ -70,10 +71,10 @@ static int ** matrix_init (const size_t matrix_size) {
     if (NULL != matrix) {
         for (; i < matrix_line; i++) {
             matrix[i] = (int*) malloc(sizeof(int) * matrix_col);
-            val = i+2;
+            val = i;
 
             for (j = 0; j < matrix_col; j++) {
-                matrix[i][j] = val;
+                matrix[i][j] = val++;
             }
         }
     }
@@ -122,13 +123,16 @@ static void pivoting (const int world_rank, const int world_size,
         for (i = world_rank*chunk; i < limit; i++) {
             pivot = matrix[i][i];
 
-            /*  Como  não  há  interdependência  dos  dados  nesse  for, se pode
-                paralelizar  a  tarefa de dividir a linha pelo pivot sem maiores
-                preocupações com dependência dos valores.
-            */
-            #pragma omp parallel for
-            for (j = 0; j < matrix_col; j++) {
-                matrix[i][j] /= pivot;
+            /*  Caso  o  pivot  seja zero, o sistema no final poderá ser do tipo
+                possível, todavia, indeterminado.   */
+            if (0 != pivot) {
+                /*  Como  há  interdependência  dos  dados  nesse  loop, se pode
+                    paralelizar  a  tarefa  de  dividir  a  linha pelo pivot sem
+                    maiores preocupações com dependência dos valores.   */
+                #pragma omp parallel for
+                for (j = 0; j < matrix_col; j++) {
+                    matrix[i][j] /= pivot;
+                }
             }
         }
 
@@ -169,8 +173,7 @@ static void merge_pivoting (const int world_rank, const int world_size,
                             int ** matrix, int *vector,
                             const size_t matrix_size) {
     size_t chunk = matrix_size/world_size, limit = 0;
-    size_t matrix_col = matrix_size+1, i = 0, j = 0,
-           k = 0;
+    size_t matrix_col = matrix_size+1, i = 0, j = 0, k = 0;
 
     if (NULL != matrix && NULL != vector) {
         limit = (world_rank+1)*chunk;
@@ -215,4 +218,37 @@ static void merge_matrix (const int world_rank, const int world_size,
     }
 
     free(vector);
+}
+
+static void clear_columns (int **matrix, const size_t matrix_size) {
+    size_t matrix_col = matrix_size+1, matrix_line = matrix_size, i = 0, j = 0,
+           k = 0, pivot = 0;
+    float factor = 0;
+    
+    if (NULL != matrix) {
+        /*  Uma linha de cada vez da matrix será selecionada para zerar a coluna
+            do seu pivot nas outras linhas. */
+        for (; i < matrix_line; i++) {
+            pivot = matrix[i][i];
+
+            /*  O  pivot  será  zero  quando  alguma chamada anterior acabou por
+                zerar a sua posição.    */
+            if (0 != pivot) {
+                for (j = 0; j < matrix_line; j++) {
+                    /*  Não  faz  sentido  procurar  zerar  a coluna na linha do
+                        pivot.*/
+                    if (i != j) {
+                        factor = matrix[j][i]/pivot;
+    
+                        /*  Na  linha  que  se  busca zerar a coluna, subtrair a
+                            linha do pivot. */
+                        #pragma omp parallel for
+                        for (k = 0; k < matrix_col; k++) {
+                            matrix[j][k] -= factor*matrix[i][k];
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
