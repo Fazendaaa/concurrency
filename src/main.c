@@ -1,5 +1,6 @@
 /*
-
+    Cuidado  ao verificar as questões de divizões por quando o pivot for igual a
+    zero.
 */
 #include <string.h>
 #include <stdlib.h>
