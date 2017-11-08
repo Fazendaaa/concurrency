@@ -21,7 +21,7 @@ int main (int argc, char **argv) {
     
     if (is_root(world_rank)) {
         printf("\nORIGINAL MATRIX:\n");
-        // print_matrix(data);
+        print_matrix(data);
     }
 
     //pivoting(world_rank, world_size, matrix, matrix_size);
