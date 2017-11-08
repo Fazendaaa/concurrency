@@ -19,8 +19,11 @@ typedef struct _ {
 
 /*  ------------------------------------------------- HEADERS ------------------------------------------------------  */
 
+/*  Lê os arquivos que conteem a matrix.    */
 Data * matrix_read (const char *, const char *);
+/*  Imprime a matrix.   */
 void print_matrix (const Data *);
+/*  Libera o espaço alocado da matrix.  */
 void free_matrix (Data **);
 
 #endif

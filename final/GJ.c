@@ -6,26 +6,27 @@
 *   Dada  uma matrix e o id do processo, essa função irá dividir as linhas responsáveis pelo processo pelo valor de seus
 *   respectivos pivots, o que irá que sua diagonal seja igual a um.
 */
-void pivoting (const int world_rank, const int world_size, int **matrix, const size_t matrix_size) {
-    size_t matrix_col = matrix_size+1, i = 0, j = 0;
-    size_t chunk = matrix_size/world_size, limit = 0, pivot = 0;
+void pivoting (const int world_rank, const int world_size, Data *data) {
+    size_t chunk = 0, limit = 0, i = 0, j = 0;
+    float pivot = 0;
 
-    if (NULL != matrix) {
+    if (NULL != data) {
+        chunk = line(data)/world_size;
         /*  Calcula até qual linha o processo designado será responsável por pivotá-la. */
         limit = (world_rank+1)*chunk;
         
         /*  Cada processo fica reponsável pela sua quantidade de linhas apenas para pivotamento.    */
         #pragma omp parallel for
         for (i = world_rank*chunk; i < limit; i++) {
-            pivot = matrix[i][i];
+            pivot = matrix(data)[i][i];
 
             /*  Caso o pivot seja zero, o sistema no final poderá ser do tipo possível, todavia, indeterminado. */
             if (0 != pivot) {
                 /*  Como  há interdependência dos dados nesse loop, se pode paralelizar a tarefa de dividir a linha pelo
                     pivot sem maiores preocupações com dependência dos valores.   */
                 #pragma omp parallel for
-                for (j = 0; j < matrix_col; j++) {
-                    matrix[i][j] /= pivot;
+                for (j = 0; j < col(data); j++) {
+                    matrix(data)[i][j] /= pivot;
                 }
             }
         }
@@ -35,13 +36,13 @@ void pivoting (const int world_rank, const int world_size, int **matrix, const s
 /*
 *   Transforma um array 2d em um array 1d.
 */
-static void matrix_to_vector (int **matrix, int *vector, const size_t matrix_size) {
-    size_t matrix_col = matrix_size+1, matrix_line = matrix_size, i = 0, j = 0, k = 0;
+static void matrix_to_vector (Data *data, float *vector) {
+    size_t i = 0, j = 0, k = 0;
 
-    if (NULL != matrix && NULL != vector) {
-        for (; i < matrix_line; i++) {
-            for (j = 0; j < matrix_col; j++) {
-                vector[k++] = matrix[i][j];
+    if (NULL != data && NULL != vector) {
+        for (; i < line(data); i++) {
+            for (j = 0; j < col(data); j++) {
+                vector[k++] = matrix(data)[i][j];
             }
         }
     }
@@ -50,13 +51,13 @@ static void matrix_to_vector (int **matrix, int *vector, const size_t matrix_siz
 /*
 *   Transforma um array 1d em um array 2d.
 */
-static void vector_to_matrix (int *vector, int **matrix, const size_t matrix_size) {
-    size_t matrix_col = matrix_size+1, matrix_line = matrix_size, i = 0, j = 0, k = 0;
+static void vector_to_matrix (Data *data, float *vector) {
+    size_t i = 0, j = 0, k = 0;
 
-    if (NULL != matrix && NULL != vector) {
-        for (; i < matrix_line; i++) {
-            for (j = 0; j < matrix_col; j++) {
-                matrix[i][j] = vector[k++];
+    if (NULL != data && NULL != vector) {
+        for (; i < line(data); i++) {
+            for (j = 0; j < col(data); j++) {
+                matrix(data)[i][j] = vector[k++];
             }
         }
     }
@@ -65,18 +66,17 @@ static void vector_to_matrix (int *vector, int **matrix, const size_t matrix_siz
 /*
 *   Junta a matrix que possui os pivotamentos anteriormente realizados com o atual.
 */
-static void merge_pivoting (const int world_rank, const int world_size, int ** matrix, int *vector,
-                            const size_t matrix_size) {
-    size_t chunk = matrix_size/world_size, limit = 0;
-    size_t matrix_col = matrix_size+1, i = 0, j = 0, k = 0;
+static void merge_pivoting (const int world_rank, const int world_size, Data *data, float *vector) {
+    size_t chunk = 0, limit = 0, i = 0, j = 0, k = 0;
 
-    if (NULL != matrix && NULL != vector) {
+    if (NULL != data && NULL != vector) {
+        chunk = line(data)/world_rank;
         limit = (world_rank+1)*chunk;
-        k = (world_rank*chunk)*matrix_col;
+        k = (world_rank*chunk)*col(data);
 
         for (i = world_rank*chunk; i < limit; i++) {
-            for (j = 0; j < matrix_col; j++) {
-                vector[k++] = matrix[i][j];
+            for (j = 0; j < col(data); j++) {
+                vector[k++] = matrix(data)[i][j];
             }
         }
     }
@@ -86,27 +86,27 @@ static void merge_pivoting (const int world_rank, const int world_size, int ** m
 *   Junta  todos os pivotamentos realizados om o da matrix que o processo responsável pivotou, em uma estrutura de anel.
 *   Cada processo fica responsável por pivotar um número de linhas de maneira crescente ao seu ID.
 */
-void merge_matrix (const int world_rank, const int world_size, int **matrix, const size_t matrix_size) {
-    size_t matrix_col = matrix_size+1, matrix_line = matrix_size;
-    int *vector = (int *) malloc(sizeof(int) * (matrix_line*matrix_col));
+void merge_matrix (const int world_rank, const int world_size, Data *data) {
+    size_t size = line(data)*col(data);
+    float *vector = malloc(sizeof(float) * size);
     
     /*  Uma estrutura de anel para passar as linhas do processo anterior que já foram pivotadas com a do processo atual
         e passar para o próximo processo.   */
     if (is_root(world_rank)) {
-        matrix_to_vector(matrix, vector, matrix_size);
-        MPI_Send(vector, matrix_line*matrix_col, MPI_INT, (world_rank+1)%world_size, 0, MPI_COMM_WORLD);
+        matrix_to_vector(data, vector);
+        MPI_Send(vector, size, MPI_FLOAT, world_rank+1, 0, MPI_COMM_WORLD);
     } else if (!is_tail(world_rank, world_size)) {
-        MPI_Recv(vector, matrix_line*matrix_col, MPI_INT, world_rank-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(vector, size, MPI_FLOAT, world_rank-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         
         /*  Juntar a matrix com as linhas pivotadas até este processo com as pivotadas por este processo.    */
-        merge_pivoting(world_rank, world_size, matrix, vector, matrix_size);
-        MPI_Send(vector, matrix_line*matrix_col, MPI_INT, (world_rank+1)%world_size, 0, MPI_COMM_WORLD);
+        merge_pivoting(world_rank, world_size, data, vector);
+        MPI_Send(vector, size, MPI_FLOAT, world_rank+1, 0, MPI_COMM_WORLD);
     } else {
         /*  Quando  o  processo  for o tail, ele apenas juntará toda a informação em uma matriz final que será utilizada
             posteriormente para zerar as colunas.   */
-        MPI_Recv(vector, matrix_line*matrix_col, MPI_INT, world_rank-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        merge_pivoting(world_rank, world_size, matrix, vector, matrix_size);
-        vector_to_matrix(vector, matrix, matrix_size);
+        MPI_Recv(vector, size, MPI_FLOAT, world_rank-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        merge_pivoting(world_rank, world_size, data, vector);
+        vector_to_matrix(data, vector);
     }
 
     free(vector);
@@ -115,26 +115,26 @@ void merge_matrix (const int world_rank, const int world_size, int **matrix, con
 /*
 *   Dada a matriz já pivotada, se zera as colunas desses pivots.
 */
-void clear_columns (int **matrix, const size_t matrix_size) {
-    size_t matrix_col = matrix_size+1, matrix_line = matrix_size, i = 0, j = 0, k = 0, pivot = 0;
-    float factor = 0;
+void clear_columns (Data *data) {
+    size_t i = 0, j = 0, k = 0;
+    float pivot = 0, factor = 0;
     
-    if (NULL != matrix) {
+    if (NULL != data) {
         /*  Uma linha de cada vez da matrix será selecionada para zerar a coluna do seu pivot nas outras linhas.    */
-        for (; i < matrix_line; i++) {
-            pivot = matrix[i][i];
+        for (; i < line(data); i++) {
+            pivot = matrix(data)[i][i];
 
             /*  O pivot será zero quando alguma chamada anterior acabou por zerar a sua posição.    */
             if (0 != pivot) {
-                for (j = 0; j < matrix_line; j++) {
+                for (j = 0; j < line(data); j++) {
                     /*  Não faz sentido procurar zerar a coluna na linha do prórprio pivot. */
                     if (i != j) {
-                        factor = matrix[j][i]/pivot;
+                        factor = matrix(data)[j][i]/pivot;
     
                         /*  Na linha que se busca zerar a coluna, subtrair a linha do pivot.    */
                         #pragma omp parallel for
-                        for (k = 0; k < matrix_col; k++) {
-                            matrix[j][k] -= factor*matrix[i][k];
+                        for (k = 0; k < col(data); k++) {
+                            matrix(data)[j][k] -= factor*matrix(data)[i][k];
                         }
                     }
                 }

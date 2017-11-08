@@ -4,8 +4,7 @@
 #ifndef GJ_H_
 #define GJ_H_
 
-#include <stdlib.h>
-#include <stdio.h>
+#include "matrix.h"
 #include <mpi.h>
 #include <omp.h>
 
@@ -17,10 +16,10 @@
 /*  ------------------------------------------------- HEADERS ------------------------------------------------------  */
 
 /*  Divide a matriz pelo valor do pivot de cada respectiva linha.   */
-void pivoting (const int, const int, int**, const size_t);
+void pivoting (const int, const int, Data *);
 /*  Junta as matrizes pivotadas por cada processo em uma só no processo de maior id.    */
-void merge_matrix (const int, const int, int**, const size_t);
+void merge_matrix (const int, const int, Data *);
 /*  Zera as colunas dos pivots. */
-void clear_columns (int**, const size_t);
+void clear_columns (Data *);
 
 #endif

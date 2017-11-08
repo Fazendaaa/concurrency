@@ -17,27 +17,29 @@ int main (int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    data = matrix_read("matriz.txt", "resultado.txt");
+    data = matrix_read("matriz.txt", "vetor.txt");
     
     if (is_root(world_rank)) {
         printf("\nORIGINAL MATRIX:\n");
         print_matrix(data);
     }
 
-    //pivoting(world_rank, world_size, matrix, matrix_size);
-    //merge_matrix(world_rank, world_size, matrix, matrix_size);
+    // pivoting(world_rank, world_size, data);
+    // printf("#%d PROCESS\n", world_rank);
+    // print_matrix(data);
+    // merge_matrix(world_rank, world_size, data);
 
     if (is_tail(world_rank, world_size)) {
-        printf("\nBEFORE CLEANING COLLUMNS:\n");
+        // printf("\nBEFORE CLEANING COLLUMNS:\n");
         // print_matrix(data);
-        //clear_columns(matrix, matrix_size);
-        printf("\nFINAL MATRIX:\n");
-        //print_matrix(matrix, matrix_size);
+        // clear_columns(data);
+        // printf("\nFINAL MATRIX:\n");
+        // print_matrix(data);
     }
 
     MPI_Finalize();
     
-    //free_matrix(&matrix, matrix_size);
+    free_matrix(&data);
 
     return 0;
 }
