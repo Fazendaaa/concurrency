@@ -24,9 +24,9 @@ int main (int argc, char **argv) {
         print_matrix(data);
     }
 
-    // pivoting(world_rank, world_size, data);
-    // printf("#%d PROCESS\n", world_rank);
-    // print_matrix(data);
+    pivoting(world_rank, world_size, data);
+    printf("#%d PROCESS\n", world_rank);
+    print_matrix(data);
     // merge_matrix(world_rank, world_size, data);
 
     if (is_tail(world_rank, world_size)) {
