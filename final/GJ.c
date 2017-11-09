@@ -128,9 +128,12 @@ void clear_columns (Data *data) {
 
             /*  O pivot será zero quando alguma chamada anterior acabou por zerar a sua posição.    */
             if (0 != pivot) {
+                /*  Seleciona-se todas as outras linhas da matriz para zerar a coluna do pivot. */
                 for (j = 0; j < line(data); j++) {
-                    /*  Não faz sentido procurar zerar a coluna na linha do prórprio pivot. */
+                    /*  Não faz sentido procurar zerar a coluna na linha do próprio pivot.  */
                     if (i != j) {
+                        /*  Dado o valor da coluna na outra linha, se cacula qual o coeficiente para multiplicar a linha
+                            do pivot para subtrair na linha em que se procura zerar a coluna.   */
                         factor = matrix(data)[j][i]/pivot;
     
                         /*  Na linha que se busca zerar a coluna, subtrair a linha do pivot.    */
@@ -140,6 +143,17 @@ void clear_columns (Data *data) {
                         }
                     }
                 }
+            }
+        }
+
+        /*  Como  após  zerar-se  as  colunas  os pivots podem mudar de valor, se divide as linhas pelos valores de seus
+            pivots. */
+        for (i = 0; i < line(data); i++) {
+            pivot = matrix(data)[i][i];
+
+            #pragma omp parallel for
+            for (j = 0; j < col(data); j++) {
+                matrix(data)[i][j] /= pivot;
             }
         }
     }
