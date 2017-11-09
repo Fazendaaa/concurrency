@@ -17,7 +17,7 @@ int main (int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    data = matrix_read("matriz.txt", "vetor.txt");
+    data = matrix_read("matriz.txt", "resultado.txt");
     
     if (is_root(world_rank)) {
         printf("\nORIGINAL MATRIX:\n");

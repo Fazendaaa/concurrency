@@ -151,10 +151,10 @@ void clear_columns (Data *data) {
         for (i = 0; i < line(data); i++) {
             pivot = matrix(data)[i][i];
 
-            #pragma omp parallel for
-            for (j = 0; j < col(data); j++) {
-                matrix(data)[i][j] /= pivot;
-            }
+            /*  Atualiza-se o valor do pivot.   */
+            matrix(data)[i][i] /= pivot;
+            /*  Atualiza-se o valor do resultado.   */
+            matrix(data)[i][col(data)-1] /= pivot;
         }
     }
 }
