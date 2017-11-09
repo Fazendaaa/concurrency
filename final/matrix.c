@@ -54,8 +54,7 @@ Data * matrix_read (const char * matrix_name, const char * result_name) {
             /*  Lê as linhas da matrix. */
             while (EOF != fscanf(matrix_file, "%f", &tmp)) {
                 line = (float*) realloc(line, sizeof(float) * (counter+1));
-                line[counter] = tmp;
-                counter++;
+                line[counter++] = tmp;
             }
             
             /*  Já  que  todas  as  matrizes  são  quadradas,  basta  pegar o número de elementos lidos e extrair a raiz
@@ -71,8 +70,7 @@ Data * matrix_read (const char * matrix_name, const char * result_name) {
             if (NULL != result) {
                 /*  Lê as linhas do resultado.  */
                 while (EOF != fscanf(result_file, "%f", &tmp)) {
-                    result[counter] = tmp;
-                    counter++;
+                    result[counter++] = tmp;
                 }
             }
 

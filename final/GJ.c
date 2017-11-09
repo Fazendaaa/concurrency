@@ -70,7 +70,7 @@ static void merge_pivoting (const int world_rank, const int world_size, Data *da
     size_t chunk = 0, limit = 0, i = 0, j = 0, k = 0;
 
     if (NULL != data && NULL != vector) {
-        chunk = line(data)/world_rank;
+        chunk = line(data)/world_size;
         limit = (world_rank+1)*chunk;
         k = (world_rank*chunk)*col(data);
 
@@ -90,26 +90,28 @@ void merge_matrix (const int world_rank, const int world_size, Data *data) {
     size_t size = line(data)*col(data);
     float *vector = malloc(sizeof(float) * size);
     
-    /*  Uma estrutura de anel para passar as linhas do processo anterior que já foram pivotadas com a do processo atual
-        e passar para o próximo processo.   */
-    if (is_root(world_rank)) {
-        matrix_to_vector(data, vector);
-        MPI_Send(vector, size, MPI_FLOAT, world_rank+1, 0, MPI_COMM_WORLD);
-    } else if (!is_tail(world_rank, world_size)) {
-        MPI_Recv(vector, size, MPI_FLOAT, world_rank-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        
-        /*  Juntar a matrix com as linhas pivotadas até este processo com as pivotadas por este processo.    */
-        merge_pivoting(world_rank, world_size, data, vector);
-        MPI_Send(vector, size, MPI_FLOAT, world_rank+1, 0, MPI_COMM_WORLD);
-    } else {
-        /*  Quando  o  processo  for o tail, ele apenas juntará toda a informação em uma matriz final que será utilizada
-            posteriormente para zerar as colunas.   */
-        MPI_Recv(vector, size, MPI_FLOAT, world_rank-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        merge_pivoting(world_rank, world_size, data, vector);
-        vector_to_matrix(data, vector);
-    }
+    if (NULL != vector) {
+        /*  Uma  estrutura  de  anel para passar as linhas do processo anterior que já foram pivotadas com a do processo
+            atual e passar para o próximo processo. */
+        if (is_root(world_rank)) {
+            matrix_to_vector(data, vector);
+            MPI_Send(vector, size, MPI_FLOAT, world_rank+1, 0, MPI_COMM_WORLD);
+        } else if (!is_tail(world_rank, world_size)) {
+            MPI_Recv(vector, size, MPI_FLOAT, world_rank-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            
+            /*  Juntar a matrix com as linhas pivotadas até este processo com as pivotadas por este processo.    */
+            merge_pivoting(world_rank, world_size, data, vector);
+            MPI_Send(vector, size, MPI_FLOAT, world_rank+1, 0, MPI_COMM_WORLD);
+        } else {
+            /*  Quando  o  processo  for  o  tail,  ele  apenas  juntará  toda a informação em uma matriz final que será
+                utilizada posteriormente para zerar as colunas.   */
+            MPI_Recv(vector, size, MPI_FLOAT, world_rank-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            merge_pivoting(world_rank, world_size, data, vector);
+            vector_to_matrix(data, vector);
+        }
 
-    free(vector);
+        free(vector);
+    }
 }
 
 /*
