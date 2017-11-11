@@ -3,8 +3,11 @@
 /*  --------------------------------------------- IMPLEMENTATIONS --------------------------------------------------  */
 
 /*
+
+
+/*
 *   Dada  uma matrix e o id do processo, essa função irá dividir as linhas responsáveis pelo processo pelo valor de seus
-*   respectivos pivots, o que irá que sua diagonal seja igual a um.
+*   respectivos pivots, o que irá fazer que sua diagonal seja igual a um.
 */
 void pivoting (const int world_rank, const int world_size, int **matrix, const size_t matrix_size) {
     size_t matrix_col = matrix_size+1, i = 0, j = 0;
@@ -13,7 +16,7 @@ void pivoting (const int world_rank, const int world_size, int **matrix, const s
     if (NULL != matrix) {
         /*  Calcula até qual linha o processo designado será responsável por pivotá-la. */
         limit = (world_rank+1)*chunk;
-        
+
         /*  Cada processo fica reponsável pela sua quantidade de linhas apenas para pivotamento.    */
         #pragma omp parallel for
         for (i = world_rank*chunk; i < limit; i++) {
@@ -89,7 +92,7 @@ static void merge_pivoting (const int world_rank, const int world_size, int ** m
 void merge_matrix (const int world_rank, const int world_size, int **matrix, const size_t matrix_size) {
     size_t matrix_col = matrix_size+1, matrix_line = matrix_size;
     int *vector = (int *) malloc(sizeof(int) * (matrix_line*matrix_col));
-    
+
     /*  Uma estrutura de anel para passar as linhas do processo anterior que já foram pivotadas com a do processo atual
         e passar para o próximo processo.   */
     if (is_root(world_rank)) {
@@ -97,7 +100,7 @@ void merge_matrix (const int world_rank, const int world_size, int **matrix, con
         MPI_Send(vector, matrix_line*matrix_col, MPI_INT, (world_rank+1)%world_size, 0, MPI_COMM_WORLD);
     } else if (!is_tail(world_rank, world_size)) {
         MPI_Recv(vector, matrix_line*matrix_col, MPI_INT, world_rank-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        
+
         /*  Juntar a matrix com as linhas pivotadas até este processo com as pivotadas por este processo.    */
         merge_pivoting(world_rank, world_size, matrix, vector, matrix_size);
         MPI_Send(vector, matrix_line*matrix_col, MPI_INT, (world_rank+1)%world_size, 0, MPI_COMM_WORLD);
@@ -118,7 +121,7 @@ void merge_matrix (const int world_rank, const int world_size, int **matrix, con
 void clear_columns (int **matrix, const size_t matrix_size) {
     size_t matrix_col = matrix_size+1, matrix_line = matrix_size, i = 0, j = 0, k = 0, pivot = 0;
     float factor = 0;
-    
+
     if (NULL != matrix) {
         /*  Uma linha de cada vez da matrix será selecionada para zerar a coluna do seu pivot nas outras linhas.    */
         for (; i < matrix_line; i++) {
@@ -130,7 +133,7 @@ void clear_columns (int **matrix, const size_t matrix_size) {
                     /*  Não faz sentido procurar zerar a coluna na linha do prórprio pivot. */
                     if (i != j) {
                         factor = matrix[j][i]/pivot;
-    
+
                         /*  Na linha que se busca zerar a coluna, subtrair a linha do pivot.    */
                         #pragma omp parallel for
                         for (k = 0; k < matrix_col; k++) {

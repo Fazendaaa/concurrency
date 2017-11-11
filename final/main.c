@@ -11,20 +11,36 @@ int main (int argc, char **argv) {
     Data *data = NULL;
     /*  Variáveis MPI.  */
     int world_size = 0, world_rank = 0;
+    double total_exec_time_start = 0.0, total_exec_time_end = 0.0;
 
     MPI_Init(&argc, &argv);
+
+    total_exec_time_start = MPI_Wtime();
 
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
     data = matrix_read("matriz.txt", "resultado.txt");
-    
+
     if (is_root(world_rank)) {
         printf("\nORIGINAL MATRIX:\n");
         print_matrix(data);
     }
 
+    swapping(world_rank, world_size, data);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    printf("barreira depois do swap\n");
+
+    send_swap(world_rank, world_size, data);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    printf("barreira depois de receber swap\n");
+
     pivoting(world_rank, world_size, data);
+
     printf("#%d PROCESS\n", world_rank);
     print_matrix(data);
     merge_matrix(world_rank, world_size, data);
@@ -37,8 +53,14 @@ int main (int argc, char **argv) {
         print_matrix(data);
     }
 
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    total_exec_time_end = MPI_Wtime();
+
+    printf("Tempo de execução total: %f\n", total_exec_time_end - total_exec_time_start);
+
     MPI_Finalize();
-    
+
     free_matrix(&data);
 
     return 0;
