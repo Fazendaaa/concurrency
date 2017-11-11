@@ -123,8 +123,6 @@ void swapping (const int world_rank, const int world_size, Data *data) {
     float *buffer = malloc(sizeof(float) * size);
     float *vector = malloc(sizeof(float) * n_elem);
 
-    printf("Hello there\n");
-
     if (NULL != data) {
         if (is_root(world_rank)) {
           for (i = 0; i < size; i++){
@@ -148,10 +146,6 @@ void swapping (const int world_rank, const int world_size, Data *data) {
                 }
             }
 
-            printf("Matrix swapped \n\n\n\n");
-
-            print_matrix(data);
-
             matrix_to_vector(data, vector);
 
             for (i = 0; i < world_size; i++) {
@@ -160,15 +154,10 @@ void swapping (const int world_rank, const int world_size, Data *data) {
                 }
             }
 
-            printf("house targaryan - nao lembro\n");
-
-
         } else {
 
             MPI_Recv(vector, n_elem, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             matrix_to_vector(data, vector);
-
-            printf("house lannister - we always pay our debts\n");
 
         }
     }

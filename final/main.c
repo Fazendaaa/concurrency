@@ -31,13 +31,9 @@ int main (int argc, char **argv) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    printf("barreira depois do swap\n");
-
     send_swap(world_rank, world_size, data);
 
     MPI_Barrier(MPI_COMM_WORLD);
-
-    printf("barreira depois de receber swap\n");
 
     pivoting(world_rank, world_size, data);
 
