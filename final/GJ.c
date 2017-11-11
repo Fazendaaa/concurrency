@@ -180,7 +180,7 @@ void send_swap (const int world_rank, const int world_size, Data *data){
     size_t n_elem = line(data)*col(data);
     float *vector = malloc(sizeof(float) * n_elem);
 
-    if (is_root(world_rank)) {
+    /*if (is_root(world_rank)) {
 
         matrix_to_vector(data, vector);
 
@@ -195,7 +195,21 @@ void send_swap (const int world_rank, const int world_size, Data *data){
         MPI_Recv(vector, n_elem, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         matrix_to_vector(data, vector);
 
+    }*/
+
+    if (is_root(world_rank)) {
+
+        matrix_to_vector(data, vector);
     }
+
+    MPI_Bcast(vector, n_elem, MPI_INT, 0, MPI_COMM_WORLD);
+
+    if (world_rank > 0) {
+
+      vector_to_matrix(data, vector);
+
+    }
+
 
 }
 
