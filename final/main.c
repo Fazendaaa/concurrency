@@ -1,8 +1,10 @@
 /*
     Cuidado ao verificar as questões de divizões por quando o pivot for igual a zero.
 */
+#include <time.h>
 #include "matrix.h"
 #include "GJ.h"
+
 
 /*  -------------------------------------------------- MAIN --------------------------------------------------------  */
 
@@ -12,9 +14,12 @@ int main (int argc, char **argv) {
     /*  Variáveis MPI.  */
     int world_size = 0, world_rank = 0;
     double total_exec_time_start = 0.0, total_exec_time_end = 0.0;
+    clock_t start, end;
+    double cpu_time_used;
 
     MPI_Init(&argc, &argv);
 
+    start = clock();
     total_exec_time_start = MPI_Wtime();
 
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
@@ -51,9 +56,15 @@ int main (int argc, char **argv) {
 
     MPI_Barrier(MPI_COMM_WORLD);
 
+    end = clock();
+
     total_exec_time_end = MPI_Wtime();
 
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+
     printf("Tempo de execução total: %f\n", total_exec_time_end - total_exec_time_start);
+
+    printf("Tempo de execução total pelo time.h: %f\n", cpu_time_used);
 
     MPI_Finalize();
 

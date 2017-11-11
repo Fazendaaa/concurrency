@@ -118,26 +118,29 @@ void merge_matrix (const int world_rank, const int world_size, Data *data) {
 /*  com todas as linhas, a troca será feita no processo principal e ao final comunicada aos outros processos */
 void swapping (const int world_rank, const int world_size, Data *data) {
     size_t i = 0, j = 0, k = 0;
-    int size = line(data);
+    int sizeLine = line(data);
+    int sizeCol = col(data);
+    printf("Line: %d\n", line(data));
+    printf("Col: %d\n", col(data));
     size_t n_elem = line(data)*col(data);
-    float *buffer = malloc(sizeof(float) * size);
+    float *buffer = malloc(sizeof(float) * sizeCol);
     float *vector = malloc(sizeof(float) * n_elem);
 
     if (NULL != data) {
         if (is_root(world_rank)) {
-          for (i = 0; i < size; i++){
+          for (i = 0; i < sizeLine; i++){
                 if (matrix(data)[i][i] == 0){
-                    for (j = 0; j < size; j++){
+                    for (j = 0; j < sizeCol; j++){
                         buffer[j] = matrix(data)[i][j];
                     }
                     // linha a ser mudada está no buffer. i marca a posição do pivô. J está livre
 
-                    for (j = 0; j < size; j++){
+                    for (j = 0; j < sizeLine; j++){
                         if (matrix(data)[j][i] > 0) {
-                            for (k = 0; k < size; k++){
+                            for (k = 0; k < sizeCol; k++){
                                 matrix(data)[i][k] = matrix(data)[j][k];
                             }
-                            for (k = 0; k < size; k++){
+                            for (k = 0; k < sizeCol + 1; k++){
                                 matrix(data)[j][k] = buffer[k];
                             }
                             break;
