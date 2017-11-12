@@ -11,6 +11,7 @@
 int main (int argc, char **argv) {
     /*  Variáveis do programa.  */
     Data *data = NULL;
+    int *order = NULL;
     /*  Variáveis MPI.  */
     int world_size = 0, world_rank = 0;
     double total_exec_time_start = 0.0, total_exec_time_end = 0.0;
@@ -27,18 +28,28 @@ int main (int argc, char **argv) {
 
     data = matrix_read("matriz.txt", "resultado.txt");
 
-    /*if (is_root(world_rank)) {
-        printf("\nORIGINAL MATRIX:\n");
-        print_matrix(data);
-    }*/
+    order = malloc(sizeof(int) * line(data));
 
-    swapping(world_rank, world_size, data);
+    for(int i = 0; i < line(data); i++) order[i] = -1;
+
+    if (is_root(world_rank)) {
+        //printf("\nORIGINAL MATRIX:\n");
+        //print_matrix(data);
+    }
+
+    swapping(world_rank, world_size, data, order);
 
     MPI_Barrier(MPI_COMM_WORLD);
 
     send_swap(world_rank, world_size, data);
 
     MPI_Barrier(MPI_COMM_WORLD);
+
+    if (is_root(world_rank)) {
+        for(int i = 0; i < line(data); i++) printf("%d\n", order[i]);
+        //printf("\nORIGINAL MATRIX:\n");
+        //print_matrix(data);
+    }
 
     pivoting(world_rank, world_size, data);
 
@@ -53,6 +64,10 @@ int main (int argc, char **argv) {
         //printf("\nFINAL MATRIX:\n");
         //print_matrix(data);
     }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    write_result(data, world_rank, order);
 
     MPI_Barrier(MPI_COMM_WORLD);
 

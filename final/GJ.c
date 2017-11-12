@@ -116,12 +116,10 @@ void merge_matrix (const int world_rank, const int world_size, Data *data) {
 
 /*  Dada uma matriz e o id do processo, essa função irá fazer troca de linha quando um pivô for zero. Devido a depêndencia */
 /*  com todas as linhas, a troca será feita no processo principal e ao final comunicada aos outros processos */
-void swapping (const int world_rank, const int world_size, Data *data) {
+void swapping (const int world_rank, const int world_size, Data *data, int order[]) {
     size_t i = 0, j = 0, k = 0;
     int sizeLine = line(data);
     int sizeCol = col(data);
-    printf("Line: %d\n", line(data));
-    printf("Col: %d\n", col(data));
     size_t n_elem = line(data)*col(data);
     float *buffer = malloc(sizeof(float) * sizeCol);
     float *vector = malloc(sizeof(float) * n_elem);
@@ -133,14 +131,15 @@ void swapping (const int world_rank, const int world_size, Data *data) {
                     for (j = 0; j < sizeCol; j++){
                         buffer[j] = matrix(data)[i][j];
                     }
-                    // linha a ser mudada está no buffer. i marca a posição do pivô. J está livre
-
                     for (j = 0; j < sizeLine; j++){
                         if (matrix(data)[j][i] > 0) {
+                            //printf("trocando linha %d por %d\n", i, j);
+                            order[i] = j;
+                            order[j] = i;
                             for (k = 0; k < sizeCol; k++){
                                 matrix(data)[i][k] = matrix(data)[j][k];
                             }
-                            for (k = 0; k < sizeCol + 1; k++){
+                            for (k = 0; k < sizeCol; k++){
                                 matrix(data)[j][k] = buffer[k];
                             }
                             break;
@@ -167,27 +166,8 @@ void swapping (const int world_rank, const int world_size, Data *data) {
 }
 
 void send_swap (const int world_rank, const int world_size, Data *data){
-
-    size_t i = 0, j = 0, k = 0;
     size_t n_elem = line(data)*col(data);
     float *vector = malloc(sizeof(float) * n_elem);
-
-    /*if (is_root(world_rank)) {
-
-        matrix_to_vector(data, vector);
-
-        for (i = 0; i < world_size; i++) {
-            if (i != world_rank) {
-                MPI_Send(vector, n_elem, MPI_INT, i, 0, MPI_COMM_WORLD);
-            }
-        }
-
-    } else {
-
-        MPI_Recv(vector, n_elem, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        matrix_to_vector(data, vector);
-
-    }*/
 
     if (is_root(world_rank)) {
 
@@ -197,12 +177,8 @@ void send_swap (const int world_rank, const int world_size, Data *data){
     MPI_Bcast(vector, n_elem, MPI_INT, 0, MPI_COMM_WORLD);
 
     if (world_rank > 0) {
-
       vector_to_matrix(data, vector);
-
     }
-
-
 }
 
 /*
@@ -245,6 +221,28 @@ void clear_columns (Data *data) {
             matrix(data)[i][i] /= pivot;
             /*  Atualiza-se o valor do resultado.   */
             matrix(data)[i][col(data)-1] /= pivot;
+        }
+    }
+}
+
+
+void write_result(Data *data, const int world_rank, int *order){
+    FILE *answer_file;
+    size_t i;
+
+    if (NULL != data) {
+        if(is_root(world_rank)){
+            answer_file = fopen("answer.txt", "wb");
+            for(i = 0; i < line(data); i++){
+                if(order[i] > -1){
+                    //printf("matriz[%d][%d] = %f\n",order[i], line(data), matrix(data)[order[i]][line(data)]);
+                    fprintf(answer_file, "%f\n", matrix(data)[order[i]][line(data)]);
+                }else{
+                    //printf("matriz[%d][%d] = %f\n",order[i], line(data), matrix(data)[i][line(data)]);
+                    fprintf(answer_file, "%f\n", matrix(data)[i][line(data)]);
+                }
+            }
+            fclose(answer_file);
         }
     }
 }
