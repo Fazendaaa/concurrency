@@ -17,15 +17,26 @@ int main(int argc, char **arqv){
     result_file = fopen("resultado.txt", "wb");
 
     int j = 0;
+    int col = 0;
 
     for(int i = 0; i < size * size ; i++){
 
-      number = 1.0 * (rand() % 100);
-      fprintf(matrix_file, "%f", number);
+      //number = 1.0 * (rand() % 100);
+
+      if(j == col){
+        //fprintf(matrix_file, "%f", number);
+        number = 1.0;
+        fprintf(matrix_file, "%f", number);
+
+      }else{
+        number = 0.0;
+        fprintf(matrix_file, "%f", number);
+      }
 
       if( j == size - 1){
         fprintf(matrix_file, "\n");
         j = 0;
+        col++;
       }else{
         fprintf(matrix_file, " ");
         j++;
