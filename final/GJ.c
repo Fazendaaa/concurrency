@@ -192,7 +192,7 @@ void clear_columns (Data *data) {
         /*  Uma linha de cada vez da matrix será selecionada para zerar a coluna do seu pivot nas outras linhas.    */
         for (; i < line(data); i++) {
             pivot = matrix(data)[i][i];
-
+            printf("pivo[%d]: %f\n", i, matrix(data)[i][i]);
             /*  O pivot será zero quando alguma chamada anterior acabou por zerar a sua posição.    */
             if (0 != pivot) {
                 /*  Seleciona-se todas as outras linhas da matriz para zerar a coluna do pivot. */
@@ -232,7 +232,7 @@ void write_result(Data *data, const int world_rank, int *order){
 
     if (NULL != data) {
         if(is_root(world_rank)){
-            answer_file = fopen("answer.txt", "wb");
+            answer_file = fopen("resultado.txt", "wb");
             for(i = 0; i < line(data); i++){
                 if(order[i] > -1){
                     //printf("matriz[%d][%d] = %f\n",order[i], line(data), matrix(data)[order[i]][line(data)]);

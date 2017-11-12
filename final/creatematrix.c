@@ -14,7 +14,7 @@ int main(int argc, char **arqv){
     scanf("%d", &size);
 
     matrix_file = fopen("matriz.txt", "wb");
-    result_file = fopen("resultado.txt", "wb");
+    result_file = fopen("vetor.txt", "wb");
 
     int j = 0;
     int col = 0;

@@ -21,38 +21,38 @@ run:
 #2 cluster nodes
 2NodesSingle1:
 	export OMP_NUM_THREADS=1 ;\
-		mpirun -hostfile ../hosts -np 2 $(EXEC)
+		mpirun -hostfile ../../hosts -np 2 $(EXEC)
 
 2Nodes4Threads1:
 	export OMP_NUM_THREADS=4 ;\
-		mpirun -hostfile ../hosts -np 2 $(EXEC)
+		mpirun -hostfile ../../hosts -np 2 $(EXEC)
 
 2Nodes8Threads1:
 	export OMP_NUM_THREADS=8 ;\
-		mpirun -hostfile ../hosts -np 2 $(EXEC)
+		mpirun -hostfile ../../hosts -np 2 $(EXEC)
 
 #4 cluster nodes
 4NodesSingle1:
 	export OMP_NUM_THREADS=1 ;\
-		mpirun -hostfile ../hosts -np 4 $(EXEC)
+		mpirun -hostfile ../../hosts -np 4 $(EXEC)
 
 4Nodes4Threads1:
 	export OMP_NUM_THREADS=4 ;\
-		mpirun -hostfile ../hosts -np 4 $(EXEC)
+		mpirun -hostfile ../../hosts -np 4 $(EXEC)
 
 4Nodes8Threads1:
 	export OMP_NUM_THREADS=8 ;\
-		mpirun -hostfile ../hosts -np 4 $(EXEC)
+		mpirun -hostfile ../../hosts -np 4 $(EXEC)
 
 #8 cluster nodes
 8NodesSingle1:
 	export OMP_NUM_THREADS=1 ;\
-		mpirun -hostfile ../hosts -np 8 $(EXEC)
+		mpirun -hostfile ../../hosts -np 8 $(EXEC)
 
 8Nodes4Threads1:
 	export OMP_NUM_THREADS=4 ;\
-		mpirun -hostfile ../hosts -np 8 $(EXEC)
+		mpirun -hostfile ../../hosts -np 8 $(EXEC)
 
 8Nodes8Threads1:
 	export OMP_NUM_THREADS=8 ;\
-		mpirun -hostfile ../hosts -np 8 $(EXEC)
+		mpirun -hostfile ../../hosts -np 8 $(EXEC)

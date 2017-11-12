@@ -26,7 +26,7 @@ int main (int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-    data = matrix_read("matriz.txt", "resultado.txt");
+    data = matrix_read("matriz.txt", "vetor.txt");
 
     order = malloc(sizeof(int) * line(data));
 
@@ -36,36 +36,52 @@ int main (int argc, char **argv) {
         //printf("\nORIGINAL MATRIX:\n");
         //print_matrix(data);
     }
-
+    printf("ready for swap\n");
     swapping(world_rank, world_size, data, order);
 
     MPI_Barrier(MPI_COMM_WORLD);
+
+    printf("swapped\n");
 
     send_swap(world_rank, world_size, data);
 
     MPI_Barrier(MPI_COMM_WORLD);
 
+    printf("send swap\n");
+
     if (is_root(world_rank)) {
-        for(int i = 0; i < line(data); i++) printf("%d\n", order[i]);
+        //for(int i = 0; i < line(data); i++) printf("%d\n", order[i]);
         //printf("\nORIGINAL MATRIX:\n");
         //print_matrix(data);
     }
+
+    printf("pivoting\n");
 
     pivoting(world_rank, world_size, data);
 
     /*printf("#%d PROCESS\n", world_rank);
     print_matrix(data);*/
+
+    printf("merged\n");
+
     merge_matrix(world_rank, world_size, data);
 
     if (is_tail(world_rank, world_size)) {
         //printf("\nBEFORE CLEANING COLLUMNS:\n");
         //print_matrix(data);
+        printf("entrou no if antes de dar clear\n");
+
         clear_columns(data);
+
+        printf("cleared\n");
+
         //printf("\nFINAL MATRIX:\n");
         //print_matrix(data);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
+
+    printf("writting result\n");
 
     write_result(data, world_rank, order);
 
