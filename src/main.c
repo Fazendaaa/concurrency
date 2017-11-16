@@ -24,11 +24,13 @@ int main (int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
     matrix = matrix_init(matrix_size);
-    
+
     if (is_root(world_rank)) {
         printf("\nORIGINAL MATRIX:\n");
         print_matrix(matrix, matrix_size);
     }
+
+    swapping(world_rank, world_size, matrix, matrix size);
 
     pivoting(world_rank, world_size, matrix, matrix_size);
     merge_matrix(world_rank, world_size, matrix, matrix_size);
@@ -42,7 +44,7 @@ int main (int argc, char **argv) {
     }
 
     MPI_Finalize();
-    
+
     free_matrix(&matrix, matrix_size);
 
     return 0;
@@ -94,7 +96,7 @@ static void print_matrix (int ** matrix, const size_t matrix_size) {
 */
 static void free_matrix (int ***matrix, const size_t size) {
     size_t i = 0;
-    
+
     if (NULL != matrix && NULL != *matrix) {
         for (; i < size; i++) {
             free((*matrix)[i]);
